@@ -323,11 +323,15 @@ protected:
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<N==MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
+    -> if_t<N == 0, get_view_type<data_nd_t<T,N>,HD>>;
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<(N<MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
+    -> if_t<(N > 0) and (N < MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
+
+  template<HostOrDevice HD,typename T,int N>
+  auto get_ND_view () const
+    -> if_t<N == MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
 
   // Metadata (name, rank, dims, customer/providers, time stamp, ...)
   std::shared_ptr<header_type>            m_header;
