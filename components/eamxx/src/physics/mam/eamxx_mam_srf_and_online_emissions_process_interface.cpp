@@ -293,10 +293,13 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 
   // read data from files
   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
+  using view_2d_host = typename KT::view_2d<Real>::HostMirror;
+  using strvec_t = std::vector<std::string>;
 
   // mam_coupling::AerosolSurfaceEmissionsHostData srf_emissions_host_data;
 
   std::map<std::string, int> map_srf_emiss_name_species_id;
+  strvec_t srf_emiss_spec_names;
   map_srf_emiss_name_species_id["DMS"] = 0;
   map_srf_emiss_name_species_id["SO2"] = 1;
   map_srf_emiss_name_species_id["bc_a4"] = 2;
@@ -306,8 +309,12 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   map_srf_emiss_name_species_id["pom_a4"] = 6;
   map_srf_emiss_name_species_id["so4_a1"] = 7;
   map_srf_emiss_name_species_id["so4_a2"] = 8;
+  // for (const auto &item : map_srf_emiss_name_species_id) {
+  //   srf_emiss_spec_names.push_back(item.first);
+  // }
 
   std::map<std::string, int> map_online_emiss_name_species_id;
+  strvec_t online_emiss_spec_names;
   map_online_emiss_name_species_id["SO2"] = 0;
   map_online_emiss_name_species_id["SOAG"] = 1;
   map_online_emiss_name_species_id["bc_a4"] = 2;
@@ -317,6 +324,9 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   map_online_emiss_name_species_id["pom_a4"] = 6;
   map_online_emiss_name_species_id["so4_a1"] = 7;
   map_online_emiss_name_species_id["so4_a2"] = 8;
+  // for (const auto &item : map_srf_emiss_name_species_id) {
+  //   online_emiss_spec_names.push_back(item.first);
+  // }
 
   // To create the input object, we need to:
   // - set names of views
@@ -324,39 +334,48 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // - initialize FieldLayouts
   // - initialize params
 
+  using namespace ShortFieldTagsNames;
+
   // make a list of host views, that holds nspec-dimensional views of
   // srf/online emissions at a grid point
-  std::map<std::string, view_1d_host> host_views_emissions;
+  std::map<std::string, view_1d_host> host_views_srf_emiss;
   // list of layouts of srf/online emissions views
   // NOTE: these are the same, but it seems best (necessary?) to have
   // equally-sized lists
-  std::map<std::string, FieldLayout> layouts_emissions;
-  ekat::ParameterList params_emissions;
+  std::map<std::string, FieldLayout> layouts_srf_emiss;
+  ekat::ParameterList params_srf_emiss;
   std::string middle_name_emiss = "_emis_specifier_for_";
+
+  // TODO: break this out into a function in emissions_utils.hpp
+  // host_views_srf_emiss[sname] = view_1d_host(sname, mam_coupling::n_srf_emiss);
+  // layouts_srf_emiss.emplace(sname, scalar_srf_emiss_layout);
+  // for (const auto &item : map_srf_emiss_name_species_id) {
+  //     online_emiss_spec_names.push_back(item.first);
+  //     const auto oname = item.first;
+  //     host_views_online_emiss[oname] = view_2d_host(oname, )
+  //   }
 
   // set names of views
   const std::string srf_emiss_name = "surface_emissions";
-  const std::string online_emiss_name = "online_emissions";
+  // const std::string online_emiss_name = "online_emissions";
 
   // declare the host views
-  host_views_emissions[srf_emiss_name] =
-      view_1d_host(srf_emiss_name, mam_coupling::n_srf_emiss);
-  host_views_emissions[online_emiss_name] =
-      view_1d_host(online_emiss_name, mam_coupling::n_online_emiss);
-
-  using namespace ShortFieldTagsNames;
+  host_views_srf_emiss[srf_emiss_name] = view_1d_host(srf_emiss_name, 1);
+  // host_views_emissions[online_emiss_name] =
+  //     view_1d_host(online_emiss_name, mam_coupling::n_online_emiss);
 
   // initialize and collect FieldLayouts
-  FieldLayout scalar_srf_emiss_layout{{CMP}, {mam_coupling::n_srf_emiss}, {srf_emiss_name}};
-  FieldLayout scalar_online_emiss_layout{
-      {CMP}, {mam_coupling::n_online_emiss}, {online_emiss_name}};
-  layouts_emissions.emplace(srf_emiss_name, scalar_srf_emiss_layout);
-  layouts_emissions.emplace(online_emiss_name, scalar_online_emiss_layout);
+  // layout for 2D (2d horiz == 1d flattened col index) scalar-valued variable
+  FieldLayout scalar_srf_emiss_layout{{COL}, {ncol_}, {srf_emiss_name}};
+  // FieldLayout scalar_online_emiss_layout{
+  //     {CMP}, {mam_coupling::n_online_emiss}, {online_emiss_name}};
+  layouts_srf_emiss.emplace(srf_emiss_name, scalar_srf_emiss_layout);
+  // layouts_emissions.emplace(online_emiss_name, scalar_online_emiss_layout);
 
   // initialize params
-  params_emissions.set("Skip_Grid_Checks", true);
-  using strvec_t = std::vector<std::string>;
-  params_emissions.set<strvec_t>("Field Names", {srf_emiss_name, online_emiss_name});
+  params_srf_emiss.set("Skip_Grid_Checks", true);
+  // these need to be the emission-type names from the map_<xyz>_emiss_name_species_id maps
+  // params_srf_emiss.set<strvec_t>("Field Names", {srf_emiss_name});
 
   // namelist entries take the form <srf,online>_emis_specifier_for_<spec_name>
   std::string emis_type = "srf";
@@ -364,33 +383,32 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
     const auto spec_name = item.first;
     const int species_id = item.second;
     const auto file_name = emis_type + middle_name_emiss + spec_name;
-    const auto &fname = m_params.get<std::string>(file_name);
-    params_emissions.set("Filename", fname);
+    const auto &fpath = m_params.get<std::string>(file_name);
+    params_srf_emiss.set("Filename", fpath);
 
     // read data
-    AtmosphereInput srf_emissions_reader(params_emissions, grid_, host_views_emissions,
-                                         layouts_emissions);
+    AtmosphereInput srf_emissions_reader(params_srf_emiss, grid_, host_views_srf_emiss, layouts_srf_emiss);
     srf_emissions_reader.read_variables();
     srf_emissions_reader.finalize();
     // copy data to device
 
   } // end ispec
   emis_type = "online";
-  for (const auto &item : map_online_emiss_name_species_id) {
-    const auto spec_name = item.first;
-    const int species_id = item.second;
-    const auto file_name = emis_type + middle_name_emiss + spec_name;
-    const auto &fname = m_params.get<std::string>(file_name);
-    params_emissions.set("Filename", fname);
+  // for (const auto &item : map_online_emiss_name_species_id) {
+  //   const auto spec_name = item.first;
+  //   const int species_id = item.second;
+  //   const auto file_name = emis_type + middle_name_emiss + spec_name;
+  //   const auto &fname = m_params.get<std::string>(file_name);
+  //   params_emissions.set("Filename", fname);
 
-    // read data
-    AtmosphereInput online_emissions_reader(
-        m_params, grid_, host_views_emissions, layouts_emissions);
-    online_emissions_reader.read_variables();
-    online_emissions_reader.finalize();
-    // copy data to device
+  //   // read data
+  //   AtmosphereInput online_emissions_reader(
+  //       m_params, grid_, host_views_emissions, layouts_emissions);
+  //   online_emissions_reader.read_variables();
+  //   online_emissions_reader.finalize();
+  //   // copy data to device
 
-  } // end ispec
+  // } // end ispec
 } // end initialize_impl()
 
 // =============================================================================
