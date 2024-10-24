@@ -248,7 +248,9 @@ void AtmosphereDriver::create_atm_processes()
     // First, add all atm processes
     dag.init_atm_proc_nodes(*m_atm_process_group);
     // Write a dot file for visualization
-    dag.write_dag("createProc_dag.dot", std::max(verb_lvl, 0));
+    if (m_atm_comm.am_i_root()) {
+      dag.write_dag("scream_atm_createProc_dag.dot", std::max(verb_lvl, 0));
+    }
   }
 }
 
@@ -702,14 +704,16 @@ void AtmosphereDriver::create_fields()
   if (verb_lvl>0) {
     // now that we've got fields, generate a DAG with fields and dependencies
     // NOTE: at this point, fields provided by initial conditions may (will)
-    // appear as unment dependencies
+    // appear as unmet dependencies
     AtmProcDAG dag;
 
     // First, add all atm processes
     dag.create_dag(*m_atm_process_group);
 
     // Write a dot file for visualization
-    dag.write_dag("createField_dag.dot", std::max(verb_lvl,0));
+    if (m_atm_comm.am_i_root()) {
+      dag.write_dag("scream_atm_createField_dag.dot", std::max(verb_lvl,0));
+    }
   }
 
   m_ad_status |= s_fields_created;
@@ -947,9 +951,11 @@ initialize_fields ()
     dag.create_dag(*m_atm_process_group);
 
     // process the initial conditions to maybe fulfill unmet dependencies
-    dag.process_IC_alt(m_fields_inited);
+    dag.process_initial_conditions(m_fields_inited);
     // Write a dot file for visualization
-    dag.write_dag("initField_dag.dot", std::max(verb_lvl,0));
+    if (m_atm_comm.am_i_root()) {
+      dag.write_dag("scream_atm_initField_dag.dot", std::max(verb_lvl,0));
+    }
   }
 
   // Initialize fields
@@ -1289,11 +1295,6 @@ void AtmosphereDriver::set_initial_conditions ()
                 : ic_pl.get<std::string>("topography_filename");
         m_iop->setup_io_info(file_name, it.second->get_grid());
       }
-      // // f_iop is std::map<std::string, Field>
-      // auto f_iop = m_iop->get_iop_field_map();
-      // for (const auto &f : f_iop) {
-      //   m_fields_inited[grid_name].push_back(f.first);
-      // }
     }
   }
 
@@ -1313,7 +1314,6 @@ void AtmosphereDriver::set_initial_conditions ()
                                              ic_fields_names[grid_name],
                                              m_current_ts,
                                              it.second);
-        // m_fields_inited[grid_name].push_back(ic_fields_names[grid_name]);
       }
     }
   }
@@ -1338,8 +1338,6 @@ void AtmosphereDriver::set_initial_conditions ()
     // Get the two fields, and copy src to tgt
     auto f_tgt = fm->get_field(tgt_fname);
     auto f_src = fm->get_field(src_fname);
-    // FIXME:
-    // m_fields_inited[gname].push_back(tgt_fname);
     f_tgt.deep_copy(f_src);
 
     // Set the initial time stamp
@@ -1395,10 +1393,6 @@ void AtmosphereDriver::set_initial_conditions ()
         read_fields_from_file (topography_file_fields_names[grid_name],
                                topography_eamxx_fields_names[grid_name],
                                io_grid,file_name,m_current_ts);
-        // auto &f_grid = topography_eamxx_fields_names[grid_name];
-        // for (const auto &f : f_grid) {
-        //   m_fields_inited[grid_name].push_back(f);
-        // }
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
@@ -1407,7 +1401,6 @@ void AtmosphereDriver::set_initial_conditions ()
                                              topography_eamxx_fields_names[grid_name],
                                              m_current_ts,
                                              it.second);
-        // m_fields_inited[grid_name].push_back(topography_eamxx_fields_names[grid_name]);
       }
     }
     // Store in provenance list, for later usage in output file metadata
@@ -1578,8 +1571,6 @@ read_fields_from_file (const std::vector<std::string>& field_names,
   std::vector<Field> fields;
   for (const auto& fn : field_names) {
     fields.push_back(field_mgr->get_field(fn));
-    // // FIXME:
-    // m_fields_inited[grid->name()].push_back(fn);
   }
 
   AtmosphereInput ic_reader(file_name,grid,fields);
@@ -1703,14 +1694,16 @@ void AtmosphereDriver::initialize_atm_procs ()
   if (verb_lvl>0) {
     // now that we've got fields, generate a DAG with fields and dependencies
     // NOTE: at this point, fields provided by initial conditions may (will)
-    // appear as unment dependencies
+    // appear as unmet dependencies
     AtmProcDAG dag;
     // First, add all atm processes
     dag.create_dag(*m_atm_process_group);
     // process the initial conditions to maybe fulfill unmet dependencies
-    dag.process_IC_alt(m_fields_inited);
+    dag.process_initial_conditions(m_fields_inited);
     // Write a dot file for visualization
-    dag.write_dag("initProc_dag.dot", std::max(verb_lvl,0));
+    if (m_atm_comm.am_i_root()) {
+      dag.write_dag("scream_atm_initProc_dag.dot", std::max(verb_lvl,0));
+    }
   }
 }
 
