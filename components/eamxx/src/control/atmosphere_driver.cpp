@@ -4,6 +4,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
+#include "share/scream_config.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
@@ -694,16 +695,21 @@ void AtmosphereDriver::create_fields()
     AtmProcDAG dag;
     // First, add all atm processes
     dag.create_dag(*m_atm_process_group);
-    // Write a dot file for visualization
+    // Write a dot file for visualizing the DAG
     if (m_atm_comm.am_i_root()) {
-      dag.write_dag("scream_atm_createField_dag.dot", std::max(verb_lvl,0));
+      std::string filename = "scream_atm_createField_dag";
+      if (is_scream_standalone()) {
+        filename += ".np" + std::to_string(m_atm_comm.size());
+      }
+      filename += ".dot";
+      dag.write_dag(filename, verb_lvl);
     }
   }
 
   m_ad_status |= s_fields_created;
 
   // If the user requested it, we can save a dictionary of the FM fields to file
-  auto& driver_options_pl = m_atm_params.sublist("driver_options");
+  // auto& driver_options_pl = m_atm_params.sublist("driver_options");
   if (driver_options_pl.get("save_field_manager_content",false)) {
     auto pg = m_grids_manager->get_grid("Physics");
     const auto& fm = m_field_mgrs.at(pg->name());
@@ -1659,9 +1665,14 @@ void AtmosphereDriver::initialize_atm_procs ()
     dag.create_dag(*m_atm_process_group);
     // process the initial conditions to maybe fulfill unmet dependencies
     dag.process_initial_conditions(m_fields_inited);
-    // Write a dot file for visualization
+    // Write a dot file for visualizing the DAG
     if (m_atm_comm.am_i_root()) {
-      dag.write_dag("scream_atm_initProc_dag.dot", std::max(verb_lvl,0));
+      std::string filename = "scream_atm_initProc_dag";
+      if (is_scream_standalone()) {
+        filename += ".np" + std::to_string(m_atm_comm.size());
+      }
+      filename += ".dot";
+      dag.write_dag(filename, verb_lvl);
     }
   }
 }
