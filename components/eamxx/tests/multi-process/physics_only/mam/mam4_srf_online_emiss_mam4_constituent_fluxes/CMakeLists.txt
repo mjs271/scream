@@ -9,6 +9,7 @@ CreateADUnitTest(${TEST_BASE_NAME}
   LABELS physics mam4_srf_online_emiss mam4_constituent_fluxes
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
+  PROPERTIES RESOURCE_LOCK ${FIXTURES_BASE_NAME}
 )
 
 # Set AD configurable options
@@ -50,4 +51,5 @@ CompareNCFilesFamilyMpi (
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   LABELS physics mam4_srf_online_emiss mam4_constituent_fluxes
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
+  PROPERTIES RESOURCE_LOCK ${FIXTURES_BASE_NAME}
 )
