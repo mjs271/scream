@@ -827,28 +827,29 @@ void MAMMicrophysics::run_impl(const double dt) {
         // input/output variable.
         // =====================================================================
         // need these additional inputs
+        // FIXME: this is a TEMPORARY HACK
         // =====================================================================
-        const int month;
-        const Real sfc_temp;
-        const Real air_temp;
-        const Real pressure_sfc;
-        const Real pressure_10m;
-        const Real tv ;
-        const Real spec_hum;
-        const Real wind_speed;
-        const Real rain;
-        const Real snow;
-        const Real solar_flux;
+        const int month = timestamp().get_month() - 1;;
+        const Real sfc_temp = 0;
+        const Real air_temp = 0;
+        const Real pressure_sfc = 0;
+        const Real pressure_10m = 0;
+        const Real tv = 0;
+        const Real spec_hum = 0;
+        const Real wind_speed = 0;
+        const Real rain = 0;
+        const Real snow = 0;
+        const Real solar_flux = 0;
         // =====================================================================
-        // Vertical pressure velocity [Pa/s] at midpoints (Require only for building
-        // DS)
-        add_field<Required>("omega", scalar3d_mid, Pa / s, grid_name);
+        // // Vertical pressure velocity [Pa/s] at midpoints (Require only for building
+        // // DS)
+        // add_field<Required>("omega", scalar3d_mid, Pa / s, grid_name);
 
-        // Total pressure [Pa] at midpoints
-        add_field<Required>("p_mid", scalar3d_mid, Pa, grid_name);
+        // // Total pressure [Pa] at midpoints
+        // add_field<Required>("p_mid", scalar3d_mid, Pa, grid_name);
 
-        // Total pressure [Pa] at interfaces
-        add_field<Required>("p_int", scalar3d_int, Pa, grid_name);
+        // // Total pressure [Pa] at interfaces
+        // add_field<Required>("p_int", scalar3d_int, Pa, grid_name);
         // =====================================================================
         // sfc_temp      -- surface temperature [K]
         //               mam4: ts(pcols) - sfc temp (merged w/ocean if coupled)
@@ -890,7 +891,7 @@ void MAMMicrophysics::run_impl(const double dt) {
             team, dt, rlats,
             // need these additional inputs
             // =================================================================
-            curr_month, // done
+            month, // done
             sfc_temp, air_temp, tv, pressure_sfc, pressure_10m,
             spec_hum, wind_speed, rain, snow, solar_flux,
             // =================================================================
