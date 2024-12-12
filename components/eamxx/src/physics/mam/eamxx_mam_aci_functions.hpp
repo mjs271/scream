@@ -418,10 +418,11 @@ void call_function_dropmixnuc(
             spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
             num2vol_ratio_max_nmodes, numptr_amode, nspec_amode, exp45logsig,
             alogsig, aten, mam_idx, mam_cnst_idx,
-            local_enable_aero_vertical_mix, ekat::subview(qcld, icol),  // out
-            ekat::subview(wsub, icol),                                  // in
-            ekat::subview(cloud_frac_prev, icol),                       // in
-            qqcw_view,                                                  // inout
+            true,
+            ekat::subview(qcld, icol),             // out
+            ekat::subview(wsub, icol),             // in
+            ekat::subview(cloud_frac_prev, icol),  // in
+            qqcw_view,                             // inout
             ptend_q_view, ekat::subview(tendnd, icol),
             ekat::subview(factnum, icol), ekat::subview(ndropcol, icol),
             ekat::subview(ndropmix, icol), ekat::subview(nsource, icol),

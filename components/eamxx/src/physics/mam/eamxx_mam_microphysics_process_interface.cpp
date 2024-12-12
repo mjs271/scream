@@ -825,8 +825,76 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
         // Note: All variables are inputs, except for progs, which is an
         // input/output variable.
+        // =====================================================================
+        // need these additional inputs
+        // =====================================================================
+        const int month;
+        const Real sfc_temp;
+        const Real air_temp;
+        const Real pressure_sfc;
+        const Real pressure_10m;
+        const Real tv ;
+        const Real spec_hum;
+        const Real wind_speed;
+        const Real rain;
+        const Real snow;
+        const Real solar_flux;
+        // =====================================================================
+        // Vertical pressure velocity [Pa/s] at midpoints (Require only for building
+        // DS)
+        add_field<Required>("omega", scalar3d_mid, Pa / s, grid_name);
+
+        // Total pressure [Pa] at midpoints
+        add_field<Required>("p_mid", scalar3d_mid, Pa, grid_name);
+
+        // Total pressure [Pa] at interfaces
+        add_field<Required>("p_int", scalar3d_int, Pa, grid_name);
+        // =====================================================================
+        // sfc_temp      -- surface temperature [K]
+        //               mam4: ts(pcols) - sfc temp (merged w/ocean if coupled)
+        // air_temp      -- surface air temperature [K]
+        //               mam4: tfld(pcols,pver) - midpoint temperature (K)
+        // pressure_sfc  -- surface pressure [Pa]
+        //               mam4: ps(pcols) - surface pressure
+        // pressure_10m  -- 10-meter pressure [Pa]
+        //               mam4: pmid(pcols,pver) - midpoint pressures (Pa)
+        // ==================
+        // local/calculated
+        // ==================
+        // tv            -- potential temperature [K]
+        //               tv = (temp*(1+vapor_mixing_ratio))
+        //               mam4: tvs
+        //               tvs(:ncol) = tfld(:ncol,pver) * (1._r8 + qh2o(:ncol,pver))
+        // spec_hum      -- specific humidity [kg/kg]
+        //               mam4: qh20(pcols,pver) - specific humidity (kg/kg)
+        // qh2o(:ncol,:) = state_q(:ncol,:,1)
+        //               state_q(pcols,pver,pcnst) - species concentrations (kg/kg)
+        // wind_speed    -- 10-meter wind spped [m/s]
+        //               mam4: wind_speed(pcols) - surface wind speed (m/s)
+        //               wind_speed(:ncol) = sqrt(ufld(:ncol,pver)*ufld(:ncol,pver)
+        //                                   + vfld(:ncol,pver)*vfld(:ncol,pver))
+        // ufld(pcols,pver) - zonal velocity (m/s)
+        //               vfld(pcols,pver) - meridional velocity (m/s)
+        // rain          -- rain content [kg/m2/s]
+        //               mam4: prect
+        //               prect(:ncol) = precc(:ncol) + precl(:ncol)
+        //               precc(pcols) - cam_out%precc - ???
+        //               precl(pcols) - cam_out%precl - ???
+        // ==================
+        // snow          -- snow height [m]
+        //               mam4: snowhland(pcols) - ???
+        // solar_flux    -- direct shortwave surface radiation [W/m^2]
+        //               mam4: fsds(pcols) - longwave down at sfc
+        // =================================================================
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
-            team, dt, rlats, cnst_offline_icol, forcings_in, atm, progs,
+            team, dt, rlats,
+            // need these additional inputs
+            // =================================================================
+            curr_month, // done
+            sfc_temp, air_temp, tv, pressure_sfc, pressure_10m,
+            spec_hum, wind_speed, rain, snow, solar_flux,
+            // =================================================================
+            cnst_offline_icol, forcings_in, atm, progs,
             photo_table, chlorine_loading, config.setsox, config.amicphys,
             config.linoz.psc_T, zenith_angle(icol), d_sfc_alb_dir_vis(icol),
             o3_col_dens_i, photo_rates_icol, extfrc_icol, invariants_icol,
